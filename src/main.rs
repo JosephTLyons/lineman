@@ -1,8 +1,7 @@
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{prelude::*, BufReader};
-use std::path::Path;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 use walkdir::WalkDir;
 
