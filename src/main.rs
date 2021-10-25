@@ -2,21 +2,37 @@ use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{prelude::*, BufReader};
 use std::path::Path;
+use std::path::PathBuf;
+use structopt::StructOpt;
 use walkdir::WalkDir;
+
+#[derive(StructOpt, Debug)]
+#[structopt(name = "basic")]
+struct StwArgs {
+    #[structopt(short, long)]
+    extensions: Vec<String>,
+
+    /// Output file
+    #[structopt(short, long, parse(from_os_str))]
+    path: PathBuf,
+}
 
 fn main() -> Result<(), String> {
     // let untouched_files: Vec<String> = Vec::new();
     // let cleaned_files: Vec<String> = Vec::new();
     // let files_with_errors: Vec<String> = Vec::new();
 
-    for dir_entry in WalkDir::new(".") {
+    let args = StwArgs::from_args();
+
+    for dir_entry in WalkDir::new(args.path) {
         match dir_entry {
             Ok(dir_entry) => {
                 let path = dir_entry.path();
 
                 if path.is_file() {
                     if let Some(extension) = path.extension() {
-                        if ["py", "html", "css", "scss"]
+                        if args
+                            .extensions
                             .iter()
                             .map(|extension| OsStr::new(extension))
                             .any(|xtension| xtension == extension)
@@ -118,7 +134,6 @@ fn test_runner(input_output_lines_array: &[(&str, &str)]) {
 // TODO:
 
 // Fix all bad error handling - don't use string errors and don't use unwraps - some errors might be killing the program when the program could just continue on
-// Command line arguments - default to this directory, but allow override, must pass in inclusion list
 // Better program name
 // Better logging - Log what has been checked, what has actually been changed, and what couldn't be changed, for whatever reason
 // Show numerical stats on how many files were looked at, how many were changed, duration of run, etc
