@@ -9,11 +9,11 @@ use walkdir::WalkDir;
 #[structopt(name = "basic")]
 struct StwArgs {
     #[structopt(short, long)]
-    extensions: Vec<String>,
-
-    /// Output file
-    #[structopt(short, long, parse(from_os_str))]
     path: PathBuf,
+
+    /// A list of file extensions that dictates which files are processed
+    #[structopt(short, long)]
+    extensions: Vec<String>,
 }
 
 fn main() -> Result<(), String> {
