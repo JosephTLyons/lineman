@@ -22,9 +22,11 @@ fn main() -> Result<(), String> {
                 if path.is_file() {
                     if let Some(extension) = path.extension() {
                         if file_type_inclusion_vector.contains(&extension) {
+                            let path_display = path.display();
+
                             match clean_file(path) {
-                                Ok(_) => println!("Cleaned: {}", path.display()),
-                                Err(_) => println!("Not cleaned: {}", path.display()),
+                                Ok(_) => println!("Cleaned: {}", path_display),
+                                Err(_) => println!("Not cleaned: {}", path_display),
                             }
                         }
                     }
