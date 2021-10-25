@@ -74,6 +74,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "869d572136620d55835903746bcb5cdc54cb2851fd0aeec53220b4bb65ef3013"
 
 [[package]]
+name = "lineman"
+version = "0.1.0"
+dependencies = [
+ "structopt",
+ "walkdir",
+]
+
+[[package]]
 name = "proc-macro-error"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -152,14 +160,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "stw"
-version = "0.1.0"
-dependencies = [
- "structopt",
- "walkdir",
 ]
 
 [[package]]
