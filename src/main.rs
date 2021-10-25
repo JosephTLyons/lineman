@@ -121,3 +121,4 @@ fn test_runner(input_output_lines_array: &[(&str, &str)]) {
 // Command line arguments - default to this directory, but allow override, must pass in inclusion list
 // Better program name
 // Better logging - Log what has been checked, what has actually been changed, and what couldn't be changed, for whatever reason
+// Show numerical stats on how many files were looked at, how many were changed, duration of run, etc
