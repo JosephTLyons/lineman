@@ -73,7 +73,7 @@ fn clean_file(path: &Path) -> Result<bool, String> {
 fn clean_line(line: &str) -> (String, bool) {
     let cleaned_line = format!("{}\n", line.trim_end());
     let line_was_cleaned = cleaned_line == line;
-    return (cleaned_line, line_was_cleaned);
+    (cleaned_line, line_was_cleaned)
 }
 
 #[test]
