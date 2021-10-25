@@ -5,11 +5,6 @@ use std::path::Path;
 use walkdir::WalkDir;
 
 fn main() -> Result<(), String> {
-    let file_type_inclusion_vector: Vec<&OsStr> = ["py", "html", "css", "scss"]
-        .iter()
-        .map(|extension| OsStr::new(extension))
-        .collect();
-
     // let untouched_files: Vec<String> = Vec::new();
     // let cleaned_files: Vec<String> = Vec::new();
     // let files_with_errors: Vec<String> = Vec::new();
@@ -21,7 +16,11 @@ fn main() -> Result<(), String> {
 
                 if path.is_file() {
                     if let Some(extension) = path.extension() {
-                        if file_type_inclusion_vector.contains(&extension) {
+                        if ["py", "html", "css", "scss"]
+                            .iter()
+                            .map(|extension| OsStr::new(extension))
+                            .any(|xtension| xtension == extension)
+                        {
                             let path_display = path.display();
 
                             match clean_file(path) {
@@ -122,4 +121,3 @@ fn test_runner(input_output_lines_array: &[(&str, &str)]) {
 // Command line arguments - default to this directory, but allow override, must pass in inclusion list
 // Better program name
 // Better logging - Log what has been checked, what has actually been changed, and what couldn't be changed, for whatever reason
-// Fix letover clippy warning
