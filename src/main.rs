@@ -24,8 +24,8 @@ fn main() -> Result<(), String> {
 
     let args = StwArgs::from_args();
 
-    for dir_entry in WalkDir::new(args.path) {
-        match dir_entry {
+    for dir_entry_result in WalkDir::new(args.path) {
+        match dir_entry_result {
             Ok(dir_entry) => {
                 let path = dir_entry.path();
 
