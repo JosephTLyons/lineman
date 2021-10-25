@@ -29,20 +29,22 @@ fn main() -> Result<(), String> {
             Ok(dir_entry) => {
                 let path = dir_entry.path();
 
-                if path.is_file() {
-                    if let Some(extension) = path.extension() {
-                        if args
-                            .extensions
-                            .iter()
-                            .map(|extension| OsStr::new(extension))
-                            .any(|xtension| xtension == extension)
-                        {
-                            let path_display = path.display();
+                if !path.is_file() {
+                    continue;
+                }
 
-                            match clean_file(path) {
-                                Ok(_) => println!("Cleaned: {}", path_display),
-                                Err(_) => println!("Not cleaned: {}", path_display),
-                            }
+                if let Some(extension) = path.extension() {
+                    if args
+                        .extensions
+                        .iter()
+                        .map(|extension| OsStr::new(extension))
+                        .any(|xtension| xtension == extension)
+                    {
+                        let path_display = path.display();
+
+                        match clean_file(path) {
+                            Ok(_) => println!("Cleaned: {}", path_display),
+                            Err(_) => println!("Not cleaned: {}", path_display),
                         }
                     }
                 }
