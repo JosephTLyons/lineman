@@ -57,13 +57,13 @@ fn main() -> Result<(), String> {
 }
 
 fn clean_file(path: &Path) -> Result<(), String> {
-    let cleaned_lines: Vec<String>;
+    let lines: Vec<String>;
 
     {
         let file = File::open(path).map_err(|_| format!("Cannot open file {}", path.display()))?;
         let buf_reader = BufReader::new(file);
 
-        cleaned_lines = buf_reader
+        lines = buf_reader
             .lines()
             .collect::<Result<Vec<String>, _>>()
             .map_err(|_| "Can't read line".to_string())?;
@@ -71,8 +71,8 @@ fn clean_file(path: &Path) -> Result<(), String> {
 
     let mut file = File::create(path).map_err(|_| "Cannot open file".to_string())?;
 
-    for line in clean_lines(&cleaned_lines) {
-        file.write_all(line.as_bytes()).unwrap();
+    for clean_line in clean_lines(&lines) {
+        file.write_all(clean_line.as_bytes()).unwrap();
     }
 
     Ok(())
