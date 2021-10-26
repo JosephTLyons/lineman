@@ -149,7 +149,7 @@ fn clean_lines_with_trailing_tabs() {
 }
 
 #[test]
-fn clean_lines_add_newline_to_end_of_file() {
+fn add_newline_to_end_of_file() {
     let input_lines = [
         "def main():\n",
         "    print(\"Hello World\")\n",
@@ -170,7 +170,7 @@ fn clean_lines_add_newline_to_end_of_file() {
 }
 
 #[test]
-fn clean_lines_remove_excessive_newlines_from_end_of_file() {
+fn remove_excessive_newlines_from_end_of_file() {
     let input_lines = [
         "def main():\n",
         "    print(\"Hello World\")\n",
