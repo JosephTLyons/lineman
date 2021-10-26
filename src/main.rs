@@ -23,6 +23,7 @@ fn main() -> Result<(), String> {
     // let files_with_errors: Vec<String> = Vec::new();
 
     let args = LinemanArgs::from_args();
+    let mut files_cleaned: u32 = 0;
 
     for dir_entry_result in WalkDir::new(args.path) {
         match dir_entry_result {
@@ -40,6 +41,8 @@ fn main() -> Result<(), String> {
                         .map(|extension| OsStr::new(extension))
                         .any(|xtension| xtension == extension)
                     {
+                        files_cleaned += 1;
+
                         let path_display = path.display();
 
                         match clean_file(path) {
@@ -53,12 +56,13 @@ fn main() -> Result<(), String> {
         }
     }
 
+    println!("Files Cleaned: {}", files_cleaned);
+
     Ok(())
 }
 
-fn clean_file(path: &Path) -> Result<bool, String> {
+fn clean_file(path: &Path) -> Result<(), String> {
     let cleaned_lines: Vec<String>;
-    let mut file_was_cleaned: bool = false;
 
     {
         let file = File::open(path).map_err(|_| format!("Cannot open file {}", path.display()))?;
@@ -66,72 +70,158 @@ fn clean_file(path: &Path) -> Result<bool, String> {
 
         cleaned_lines = buf_reader
             .lines()
-            .map(|line_result| {
-                line_result.map(|line| {
-                    let (cleaned_line, line_was_cleaned) = clean_line(&line);
-
-                    if line_was_cleaned {
-                        file_was_cleaned = true
-                    }
-
-                    cleaned_line
-                })
-            })
             .collect::<Result<Vec<String>, _>>()
             .map_err(|_| "Can't read line".to_string())?;
     }
 
     let mut file = File::create(path).map_err(|_| "Cannot open file".to_string())?;
 
-    for line in cleaned_lines {
+    for line in clean_lines(&cleaned_lines) {
         file.write_all(line.as_bytes()).unwrap();
     }
 
-    Ok(file_was_cleaned)
+    Ok(())
 }
 
-fn clean_line(line: &str) -> (String, bool) {
-    let cleaned_line = format!("{}\n", line.trim_end());
-    let line_was_cleaned = cleaned_line == line;
-    (cleaned_line, line_was_cleaned)
+fn clean_lines(lines: &[String]) -> Vec<String> {
+    let mut cleaned_lines: Vec<String> = lines
+        .iter()
+        .map(|line| format!("{}\n", line.trim_end()))
+        .collect();
+
+    // Normalize newlines at the end of the file to 1
+    // This is very ugly code - find a more elegant way to do this
+    let mut newline_count: usize = 0;
+
+    for line in cleaned_lines.iter().rev() {
+        if line == "\n" {
+            newline_count += 1;
+        } else {
+            break;
+        }
+    }
+
+    if newline_count > 0 {
+        cleaned_lines = cleaned_lines[0..cleaned_lines.len() - newline_count].to_vec();
+    }
+
+    cleaned_lines
 }
 
 #[test]
-fn clean_bad_lines() {
-    let input_output_lines_array = [
-        // Remove spaces
-        ("some code    \n", "some code\n"),
-        // Keep indentation, remove spaces
-        ("    some code    \n", "    some code\n"),
-        // Remove tab
-        ("some code\t\n", "some code\n"),
-        // Keep indentation, remove tab
-        ("    some code\t\n", "    some code\n"),
-        // Add newline
-        ("some code", "some code\n"),
-        // Remove spaces, add newline
-        ("some code    ", "some code\n"),
-        // Remove spaces
-        ("    \n", "\n"),
-        // Remove spaces, add newline
-        ("    ", "\n"),
+// When a file's lines are read into this application, the newlines are consumed,
+// so we must test a case that mimics that behavior
+fn clean_lines_add_newlines() {
+    let input_lines = [
+        "def main():",
+        "    print(\"Hello World\")",
+        "",
+        "if __name__ == \"__main__\":",
+        "    main()",
     ];
 
-    test_runner(&input_output_lines_array);
+    let output_lines = [
+        "def main():\n",
+        "    print(\"Hello World\")\n",
+        "\n",
+        "if __name__ == \"__main__\":\n",
+        "    main()\n",
+    ];
+
+    test_runner(&input_lines, &output_lines);
 }
 
 #[test]
-fn skip_clean_good_lines() {
-    let input_output_lines_array = [("some code\n", "some code\n"), ("\n", "\n")];
+fn clean_lines_with_trailing_spaces() {
+    let input_lines = [
+        "def main():   \n",
+        "    print(\"Hello World\")    \n",
+        "    \n",
+        "if __name__ == \"__main__\":    \n",
+        "    main()    \n",
+    ];
 
-    test_runner(&input_output_lines_array);
+    let output_lines = [
+        "def main():\n",
+        "    print(\"Hello World\")\n",
+        "\n",
+        "if __name__ == \"__main__\":\n",
+        "    main()\n",
+    ];
+
+    test_runner(&input_lines, &output_lines);
+}
+
+#[test]
+fn clean_lines_with_trailing_tabs() {
+    let input_lines = [
+        "def main():\t\n",
+        "    print(\"Hello World\")\t\n",
+        "\t\n",
+        "if __name__ == \"__main__\":\t\n",
+        "    main()\t\n",
+    ];
+
+    let output_lines = [
+        "def main():\n",
+        "    print(\"Hello World\")\n",
+        "\n",
+        "if __name__ == \"__main__\":\n",
+        "    main()\n",
+    ];
+
+    test_runner(&input_lines, &output_lines);
+}
+
+#[test]
+fn clean_lines_add_newline_to_end_of_file() {
+    let input_lines = [
+        "def main():\n",
+        "    print(\"Hello World\")\n",
+        "\n",
+        "if __name__ == \"__main__\":\n",
+        "    main()",
+    ];
+
+    let output_lines = [
+        "def main():\n",
+        "    print(\"Hello World\")\n",
+        "\n",
+        "if __name__ == \"__main__\":\n",
+        "    main()\n",
+    ];
+
+    test_runner(&input_lines, &output_lines);
+}
+
+#[test]
+fn clean_lines_remove_excessive_newlines_from_end_of_file() {
+    let input_lines = [
+        "def main():\n",
+        "    print(\"Hello World\")\n",
+        "\n",
+        "if __name__ == \"__main__\":\n",
+        "    main()\n",
+        "\n",
+        "\n",
+        "\n",
+    ];
+
+    let output_lines = [
+        "def main():\n",
+        "    print(\"Hello World\")\n",
+        "\n",
+        "if __name__ == \"__main__\":\n",
+        "    main()\n",
+    ];
+
+    test_runner(&input_lines, &output_lines);
 }
 
 #[allow(dead_code)]
-fn test_runner(input_output_lines_array: &[(&str, &str)]) {
-    for (input, output) in input_output_lines_array {
-        assert_eq!(clean_line(*input).0, *output);
-    }
+fn test_runner(input_lines: &[&str], output_lines: &[&str]) {
+    let input_lines: Vec<String> = input_lines.iter().map(|line| line.to_string()).collect();
+    assert_eq!(clean_lines(&input_lines), output_lines);
 }
 
 // TODO:
@@ -140,3 +230,6 @@ fn test_runner(input_output_lines_array: &[(&str, &str)]) {
 // Better logging - Log what has been checked, what has actually been changed, and what couldn't be changed, for whatever reason
 // Show numerical stats on how many files were looked at, how many were changed, duration of run, etc
 // Tweak command line argument parsing (help, info, etc)
+// Collecting lines with newlines to begin with or add them in before the clean_lines function
+// Add flag to turn off newline normalization
+// Make more efficient and clean (clean_file / clean_lines functions)
