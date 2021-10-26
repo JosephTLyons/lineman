@@ -63,8 +63,11 @@ fn clean_file(path: &Path) -> Result<(), String> {
         let file = File::open(path).map_err(|_| format!("Cannot open file {}", path.display()))?;
         let buf_reader = BufReader::new(file);
 
+        // Need to add newline to each line because the original newline is consumed when collecting the lines from the file
+        // Is there a better way to do this where we don't have to manually add them back in?
         lines = buf_reader
             .lines()
+            .map(|line_result| line_result.map(|line| line + "\n"))
             .collect::<Result<Vec<String>, _>>()
             .map_err(|_| "Can't read line".to_string())?;
     }
@@ -101,29 +104,6 @@ fn clean_lines(lines: &[String]) -> Vec<String> {
     }
 
     cleaned_lines
-}
-
-#[test]
-// When a file's lines are read into this application, the newlines are consumed,
-// so we must test a case that mimics that behavior
-fn clean_lines_add_newlines() {
-    let input_lines = [
-        "def main():",
-        "    print(\"Hello World\")",
-        "",
-        "if __name__ == \"__main__\":",
-        "    main()",
-    ];
-
-    let output_lines = [
-        "def main():\n",
-        "    print(\"Hello World\")\n",
-        "\n",
-        "if __name__ == \"__main__\":\n",
-        "    main()\n",
-    ];
-
-    test_runner(&input_lines, &output_lines);
 }
 
 #[test]
