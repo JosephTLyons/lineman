@@ -7,3 +7,4 @@
 - Collecting lines with newlines to begin with or add them in before the clean_lines function
 - Add flag to turn off newline normalization
 - Make more efficient and clean (clean_file / clean_lines functions)
+- Reimplement mechanism to only write to file if lines were changed and only report changed files
