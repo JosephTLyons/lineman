@@ -23,7 +23,6 @@ fn main() -> Result<(), String> {
     // let files_with_errors: Vec<String> = Vec::new();
 
     let args = LinemanArgs::from_args();
-    let mut files_cleaned: u32 = 0;
 
     for dir_entry_result in WalkDir::new(args.path) {
         match dir_entry_result {
@@ -41,8 +40,6 @@ fn main() -> Result<(), String> {
                         .map(|extension| OsStr::new(extension))
                         .any(|xtension| xtension == extension)
                     {
-                        files_cleaned += 1;
-
                         let path_display = path.display();
 
                         match clean_file(path) {
@@ -55,8 +52,6 @@ fn main() -> Result<(), String> {
             Err(_) => return Err("Bad Path".to_string()),
         }
     }
-
-    println!("Files Cleaned: {}", files_cleaned);
 
     Ok(())
 }
