@@ -85,24 +85,11 @@ fn clean_lines(lines: &[String]) -> Vec<String> {
     let mut cleaned_lines: Vec<String> = lines
         .iter()
         .map(|line| format!("{}\n", line.trim_end()))
-        .collect();
+        .rev()
+        .skip_while(|line| line.trim_end().is_empty())
+        .collect::<Vec<_>>();
 
-    // Normalize newlines at the end of the file to 1
-    // This is very ugly code - find a more elegant way to do this
-    let mut newline_count: usize = 0;
-
-    for line in cleaned_lines.iter().rev() {
-        if line == "\n" {
-            newline_count += 1;
-        } else {
-            break;
-        }
-    }
-
-    if newline_count > 0 {
-        cleaned_lines = cleaned_lines[0..cleaned_lines.len() - newline_count].to_vec();
-    }
-
+    cleaned_lines.reverse();
     cleaned_lines
 }
 
