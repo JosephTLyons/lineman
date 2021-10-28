@@ -1,6 +1,5 @@
 use std::ffi::OsStr;
-use std::fs;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
