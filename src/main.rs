@@ -38,11 +38,11 @@ fn main() {
                     continue;
                 }
 
-                if let Some(extension) = path.extension() {
+                if let Some(current_file_extension) = path.extension() {
                     if args
                         .extensions
                         .iter()
-                        .any(|xtension| OsStr::new(xtension) == extension)
+                        .any(|extension| current_file_extension == OsStr::new(extension))
                     {
                         // TODO: Find a way to not have to convert to PathBuf
                         match clean_file(path) {
