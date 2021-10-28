@@ -42,8 +42,7 @@ fn main() {
                     if args
                         .extensions
                         .iter()
-                        .map(|extension| OsStr::new(extension))
-                        .any(|xtension| xtension == extension)
+                        .any(|xtension| OsStr::new(xtension) == extension)
                     {
                         // TODO: Find a way to not have to convert to PathBuf
                         match clean_file(path) {
