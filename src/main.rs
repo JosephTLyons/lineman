@@ -42,7 +42,7 @@ fn main() -> Result<(), LinemanApplicationError> {
         ));
     }
 
-    let normalize_newlines = false;
+    let normalize_eof_newlines = false;
 
     for dir_entry_result in WalkDir::new(root_path) {
         match dir_entry_result {
@@ -60,7 +60,7 @@ fn main() -> Result<(), LinemanApplicationError> {
                         .any(|extension| current_file_extension == OsStr::new(extension))
                     {
                         // TODO: Find a way to not have to convert to PathBuf
-                        match clean_file(path, normalize_newlines) {
+                        match clean_file(path, normalize_eof_newlines) {
                             Ok(_) => cleaned_file_paths.push(path.to_path_buf()),
                             Err(
                                 LinemanFileError::FileNotOpened | LinemanFileError::FileNotCleaned,
@@ -97,12 +97,12 @@ fn main() -> Result<(), LinemanApplicationError> {
     Ok(())
 }
 
-fn clean_file(path: &Path, normalize_newlines: bool) -> Result<(), LinemanFileError> {
+fn clean_file(path: &Path, normalize_eof_newlines: bool) -> Result<(), LinemanFileError> {
     let file_string = fs::read_to_string(path).map_err(|_| LinemanFileError::FileNotOpened)?;
     let lines: Vec<&str> = file_string.split_inclusive('\n').collect();
     let mut file = File::create(path).map_err(|_| LinemanFileError::FileNotCleaned)?;
 
-    for clean_line in clean_lines(&lines, normalize_newlines) {
+    for clean_line in clean_lines(&lines, normalize_eof_newlines) {
         // TODO: This needs more thought, as a failure here means the file is probably only partially written to
         file.write_all(clean_line.as_bytes())
             .map_err(|_| LinemanFileError::FileNotCleaned)?;
@@ -111,21 +111,21 @@ fn clean_file(path: &Path, normalize_newlines: bool) -> Result<(), LinemanFileEr
     Ok(())
 }
 
-fn clean_lines(lines: &[&str], normalize_newlines: bool) -> Vec<String> {
+fn clean_lines(lines: &[&str], normalize_eof_newlines: bool) -> Vec<String> {
     let mut cleaned_lines: Vec<String> = lines
         .iter()
         .map(|line| {
             let line_has_newline = line.ends_with('\n');
             let trimmed_line = line.trim_end();
 
-            if normalize_newlines || line_has_newline {
+            if normalize_eof_newlines || line_has_newline {
                 return format!("{}\n", trimmed_line);
             }
 
             trimmed_line.to_string()
         })
         .rev()
-        .skip_while(|line| normalize_newlines && line.trim_end().is_empty())
+        .skip_while(|line| normalize_eof_newlines && line.trim_end().is_empty())
         .collect::<Vec<_>>();
 
     cleaned_lines.reverse();
@@ -268,6 +268,6 @@ fn keep_excessive_newlines_from_end_of_file() {
 }
 
 #[allow(dead_code)]
-fn test_runner(input_lines: &[&str], output_lines: &[&str], normalize_newlines: bool) {
-    assert_eq!(clean_lines(input_lines, normalize_newlines), output_lines);
+fn test_runner(input_lines: &[&str], output_lines: &[&str], normalize_eof_newlines: bool) {
+    assert_eq!(clean_lines(input_lines, normalize_eof_newlines), output_lines);
 }
