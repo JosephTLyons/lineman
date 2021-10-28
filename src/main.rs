@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::{prelude::*, BufReader};
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
-use walkdir::WalkDir;
+use walkdir::{Error, WalkDir};
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "lineman")]
@@ -17,10 +17,15 @@ struct LinemanArgs {
     extensions: Vec<String>,
 }
 
-fn main() -> Result<(), String> {
-    // let untouched_files: Vec<String> = Vec::new();
-    // let cleaned_files: Vec<String> = Vec::new();
-    // let files_with_errors: Vec<String> = Vec::new();
+enum LinemanError {
+    FileNotOpened,
+    FileNotCleaned,
+}
+
+fn main() {
+    let mut cleaned_file_paths: Vec<PathBuf> = Vec::new();
+    let mut skipped_file_paths: Vec<PathBuf> = Vec::new();
+    let mut walk_dir_errors: Vec<Error> = Vec::new();
 
     let args = LinemanArgs::from_args();
 
@@ -40,27 +45,47 @@ fn main() -> Result<(), String> {
                         .map(|extension| OsStr::new(extension))
                         .any(|xtension| xtension == extension)
                     {
-                        let path_display = path.display();
-
+                        // TODO: Find a way to not have to convert to PathBuf
                         match clean_file(path) {
-                            Ok(_) => println!("Cleaned: {}", path_display),
-                            Err(_) => println!("Not cleaned: {}", path_display),
+                            Ok(_) => cleaned_file_paths.push(path.to_path_buf()),
+                            Err(LinemanError::FileNotOpened | LinemanError::FileNotCleaned) => {
+                                skipped_file_paths.push(path.to_path_buf())
+                            }
                         }
                     }
                 }
             }
-            Err(_) => return Err("Bad Path".to_string()),
+            // TODO: I don't really know what the hell this error is, so I'm just grabbing it and printing it at the end in the report.
+            // When I have a better idea of what it is, I can do something different, I guess
+            Err(walk_dir_error) => walk_dir_errors.push(walk_dir_error),
         }
     }
 
-    Ok(())
+    let category_and_file_paths = [
+        (("Cleaned Files:"), cleaned_file_paths),
+        (("Skipped Files:"), skipped_file_paths),
+    ];
+
+    for (category, file_paths) in category_and_file_paths {
+        println!("{}", category);
+
+        for file_path in file_paths {
+            println!("{}{}", " ".repeat(4), file_path.display());
+        }
+    }
+
+    println!("Walkdir Errors:");
+
+    for walk_dir_error in walk_dir_errors {
+        println!("{}{}", " ".repeat(4), walk_dir_error);
+    }
 }
 
-fn clean_file(path: &Path) -> Result<(), String> {
+fn clean_file(path: &Path) -> Result<(), LinemanError> {
     let lines: Vec<String>;
 
     {
-        let file = File::open(path).map_err(|_| format!("Cannot open file {}", path.display()))?;
+        let file = File::open(path).map_err(|_| LinemanError::FileNotOpened)?;
         let buf_reader = BufReader::new(file);
 
         // Need to add newline to each line because the original newline is consumed when collecting the lines from the file
@@ -69,13 +94,15 @@ fn clean_file(path: &Path) -> Result<(), String> {
             .lines()
             .map(|line_result| line_result.map(|line| line + "\n"))
             .collect::<Result<Vec<String>, _>>()
-            .map_err(|_| "Can't read line".to_string())?;
+            .map_err(|_| LinemanError::FileNotCleaned)?;
     }
 
-    let mut file = File::create(path).map_err(|_| "Cannot open file".to_string())?;
+    let mut file = File::create(path).map_err(|_| LinemanError::FileNotCleaned)?;
 
     for clean_line in clean_lines(&lines) {
-        file.write_all(clean_line.as_bytes()).unwrap();
+        // TODO: This needs more thought, as a failure here means the file is probably only partially written to
+        file.write_all(clean_line.as_bytes())
+            .map_err(|_| LinemanError::FileNotCleaned)?;
     }
 
     Ok(())
