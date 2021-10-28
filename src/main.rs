@@ -1,6 +1,7 @@
 use std::ffi::OsStr;
+use std::fs;
 use std::fs::File;
-use std::io::{prelude::*, BufReader};
+use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 use walkdir::{Error, WalkDir};
@@ -17,19 +18,33 @@ struct LinemanArgs {
     extensions: Vec<String>,
 }
 
-enum LinemanError {
+#[derive(Debug)]
+enum LinemanApplicationError {
+    InvalidRootPath(String),
+}
+
+enum LinemanFileError {
     FileNotOpened,
     FileNotCleaned,
 }
 
-fn main() {
+fn main() -> Result<(), LinemanApplicationError> {
     let mut cleaned_file_paths: Vec<PathBuf> = Vec::new();
     let mut skipped_file_paths: Vec<PathBuf> = Vec::new();
     let mut walk_dir_errors: Vec<Error> = Vec::new();
 
     let args = LinemanArgs::from_args();
+    let root_path = args.path;
 
-    for dir_entry_result in WalkDir::new(args.path) {
+    if !root_path.is_dir() {
+        return Err(LinemanApplicationError::InvalidRootPath(
+            "The provided path is not a valid directory".to_string(),
+        ));
+    }
+
+    let normalize_newlines = false;
+
+    for dir_entry_result in WalkDir::new(root_path) {
         match dir_entry_result {
             Ok(dir_entry) => {
                 let path = dir_entry.path();
@@ -45,11 +60,11 @@ fn main() {
                         .any(|extension| current_file_extension == OsStr::new(extension))
                     {
                         // TODO: Find a way to not have to convert to PathBuf
-                        match clean_file(path) {
+                        match clean_file(path, normalize_newlines) {
                             Ok(_) => cleaned_file_paths.push(path.to_path_buf()),
-                            Err(LinemanError::FileNotOpened | LinemanError::FileNotCleaned) => {
-                                skipped_file_paths.push(path.to_path_buf())
-                            }
+                            Err(
+                                LinemanFileError::FileNotOpened | LinemanFileError::FileNotCleaned,
+                            ) => skipped_file_paths.push(path.to_path_buf()),
                         }
                     }
                 }
@@ -78,41 +93,39 @@ fn main() {
     for walk_dir_error in walk_dir_errors {
         println!("{}{}", " ".repeat(4), walk_dir_error);
     }
+
+    Ok(())
 }
 
-fn clean_file(path: &Path) -> Result<(), LinemanError> {
-    let lines: Vec<String>;
+fn clean_file(path: &Path, normalize_newlines: bool) -> Result<(), LinemanFileError> {
+    let file_string = fs::read_to_string(path).map_err(|_| LinemanFileError::FileNotOpened)?;
+    let lines: Vec<&str> = file_string.split_inclusive('\n').collect();
+    let mut file = File::create(path).map_err(|_| LinemanFileError::FileNotCleaned)?;
 
-    {
-        let file = File::open(path).map_err(|_| LinemanError::FileNotOpened)?;
-        let buf_reader = BufReader::new(file);
-
-        // Need to add newline to each line because the original newline is consumed when collecting the lines from the file
-        // Is there a better way to do this where we don't have to manually add them back in?
-        lines = buf_reader
-            .lines()
-            .map(|line_result| line_result.map(|line| line + "\n"))
-            .collect::<Result<Vec<String>, _>>()
-            .map_err(|_| LinemanError::FileNotCleaned)?;
-    }
-
-    let mut file = File::create(path).map_err(|_| LinemanError::FileNotCleaned)?;
-
-    for clean_line in clean_lines(&lines) {
+    for clean_line in clean_lines(&lines, normalize_newlines) {
         // TODO: This needs more thought, as a failure here means the file is probably only partially written to
         file.write_all(clean_line.as_bytes())
-            .map_err(|_| LinemanError::FileNotCleaned)?;
+            .map_err(|_| LinemanFileError::FileNotCleaned)?;
     }
 
     Ok(())
 }
 
-fn clean_lines(lines: &[String]) -> Vec<String> {
+fn clean_lines(lines: &[&str], normalize_newlines: bool) -> Vec<String> {
     let mut cleaned_lines: Vec<String> = lines
         .iter()
-        .map(|line| format!("{}\n", line.trim_end()))
+        .map(|line| {
+            let line_has_newline = line.ends_with('\n');
+            let trimmed_line = line.trim_end();
+
+            if normalize_newlines || line_has_newline {
+                return format!("{}\n", trimmed_line);
+            }
+
+            trimmed_line.to_string()
+        })
         .rev()
-        .skip_while(|line| line.trim_end().is_empty())
+        .skip_while(|line| normalize_newlines && line.trim_end().is_empty())
         .collect::<Vec<_>>();
 
     cleaned_lines.reverse();
@@ -137,7 +150,7 @@ fn clean_lines_with_trailing_spaces() {
         "    main()\n",
     ];
 
-    test_runner(&input_lines, &output_lines);
+    test_runner(&input_lines, &output_lines, true);
 }
 
 #[test]
@@ -158,7 +171,7 @@ fn clean_lines_with_trailing_tabs() {
         "    main()\n",
     ];
 
-    test_runner(&input_lines, &output_lines);
+    test_runner(&input_lines, &output_lines, true);
 }
 
 #[test]
@@ -179,7 +192,28 @@ fn add_newline_to_end_of_file() {
         "    main()\n",
     ];
 
-    test_runner(&input_lines, &output_lines);
+    test_runner(&input_lines, &output_lines, true);
+}
+
+#[test]
+fn do_not_add_newline_to_end_of_file() {
+    let input_lines = [
+        "def main():\n",
+        "    print(\"Hello World\")\n",
+        "\n",
+        "if __name__ == \"__main__\":\n",
+        "    main()",
+    ];
+
+    let output_lines = [
+        "def main():\n",
+        "    print(\"Hello World\")\n",
+        "\n",
+        "if __name__ == \"__main__\":\n",
+        "    main()",
+    ];
+
+    test_runner(&input_lines, &output_lines, false);
 }
 
 #[test]
@@ -203,11 +237,37 @@ fn remove_excessive_newlines_from_end_of_file() {
         "    main()\n",
     ];
 
-    test_runner(&input_lines, &output_lines);
+    test_runner(&input_lines, &output_lines, true);
+}
+
+#[test]
+fn keep_excessive_newlines_from_end_of_file() {
+    let input_lines = [
+        "def main():\n",
+        "    print(\"Hello World\")\n",
+        "\n",
+        "if __name__ == \"__main__\":\n",
+        "    main()\n",
+        "\n",
+        "\n",
+        "\n",
+    ];
+
+    let output_lines = [
+        "def main():\n",
+        "    print(\"Hello World\")\n",
+        "\n",
+        "if __name__ == \"__main__\":\n",
+        "    main()\n",
+        "\n",
+        "\n",
+        "\n",
+    ];
+
+    test_runner(&input_lines, &output_lines, false);
 }
 
 #[allow(dead_code)]
-fn test_runner(input_lines: &[&str], output_lines: &[&str]) {
-    let input_lines: Vec<String> = input_lines.iter().map(|line| line.to_string()).collect();
-    assert_eq!(clean_lines(&input_lines), output_lines);
+fn test_runner(input_lines: &[&str], output_lines: &[&str], normalize_newlines: bool) {
+    assert_eq!(clean_lines(input_lines, normalize_newlines), output_lines);
 }
