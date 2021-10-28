@@ -150,7 +150,7 @@ fn clean_lines_with_trailing_spaces() {
         "    main()\n",
     ];
 
-    test_runner(&input_lines, &output_lines, true);
+    assert_eq!(clean_lines(&input_lines, true), output_lines);
 }
 
 #[test]
@@ -171,7 +171,7 @@ fn clean_lines_with_trailing_tabs() {
         "    main()\n",
     ];
 
-    test_runner(&input_lines, &output_lines, true);
+    assert_eq!(clean_lines(&input_lines, true), output_lines);
 }
 
 #[test]
@@ -192,7 +192,7 @@ fn add_newline_to_end_of_file() {
         "    main()\n",
     ];
 
-    test_runner(&input_lines, &output_lines, true);
+    assert_eq!(clean_lines(&input_lines, true), output_lines);
 }
 
 #[test]
@@ -213,7 +213,7 @@ fn do_not_add_newline_to_end_of_file() {
         "    main()",
     ];
 
-    test_runner(&input_lines, &output_lines, false);
+    assert_eq!(clean_lines(&input_lines, false), output_lines);
 }
 
 #[test]
@@ -237,7 +237,7 @@ fn remove_excessive_newlines_from_end_of_file() {
         "    main()\n",
     ];
 
-    test_runner(&input_lines, &output_lines, true);
+    assert_eq!(clean_lines(&input_lines, true), output_lines);
 }
 
 #[test]
@@ -264,10 +264,5 @@ fn keep_excessive_newlines_from_end_of_file() {
         "\n",
     ];
 
-    test_runner(&input_lines, &output_lines, false);
-}
-
-#[allow(dead_code)]
-fn test_runner(input_lines: &[&str], output_lines: &[&str], normalize_eof_newlines: bool) {
-    assert_eq!(clean_lines(input_lines, normalize_eof_newlines), output_lines);
+    assert_eq!(clean_lines(&input_lines, false), output_lines);
 }
