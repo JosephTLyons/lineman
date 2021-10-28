@@ -103,6 +103,7 @@ fn clean_file(path: &Path, normalize_eof_newlines: bool) -> Result<(), LinemanFi
 
     for clean_line in clean_lines(&lines, normalize_eof_newlines) {
         // TODO: This needs more thought, as a failure here means the file is probably only partially written to
+        // Better hope your files are version controlled
         file.write_all(clean_line.as_bytes())
             .map_err(|_| LinemanFileError::FileNotCleaned)?;
     }
