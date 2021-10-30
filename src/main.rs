@@ -53,11 +53,11 @@ fn main() -> Result<(), LinemanApplicationError> {
                 }
 
                 if let Some(current_file_extension) = path.extension() {
-                    if args
+                    let file_is_in_extension_vector = args
                         .extensions
                         .iter()
-                        .any(|extension| current_file_extension == OsStr::new(extension))
-                    {
+                        .any(|extension| current_file_extension == OsStr::new(extension));
+
                     if file_is_in_extension_vector {
                         match clean_file(path, normalize_eof_newlines) {
                             Ok(_) => cleaned_file_paths.push(path.to_path_buf()),
