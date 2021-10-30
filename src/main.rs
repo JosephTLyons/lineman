@@ -18,7 +18,7 @@ struct LinemanArgs {
 
     /// Disables EOF newline normalization
     #[structopt(short, long)]
-    disable_eof_newline_normalization: bool
+    disable_eof_newline_normalization: bool,
 }
 
 #[derive(Debug)]
