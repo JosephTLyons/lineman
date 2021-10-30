@@ -15,6 +15,10 @@ struct LinemanArgs {
     /// A list of file extensions that dictates which files are processed
     #[structopt(short, long)]
     extensions: Vec<String>,
+
+    /// Disables EOF newline normalization
+    #[structopt(short, long)]
+    disable_eof_newline_normalization: bool
 }
 
 #[derive(Debug)]
@@ -41,7 +45,7 @@ fn main() -> Result<(), LinemanApplicationError> {
         ));
     }
 
-    let normalize_eof_newlines = false;
+    let normalize_eof_newlines = !args.disable_eof_newline_normalization;
 
     for dir_entry_result in WalkDir::new(root_path) {
         match dir_entry_result {
