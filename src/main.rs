@@ -58,7 +58,7 @@ fn main() -> Result<(), LinemanApplicationError> {
                         .iter()
                         .any(|extension| current_file_extension == OsStr::new(extension))
                     {
-                        // TODO: Find a way to not have to convert to PathBuf
+                    if file_is_in_extension_vector {
                         match clean_file(path, normalize_eof_newlines) {
                             Ok(_) => cleaned_file_paths.push(path.to_path_buf()),
                             Err(
