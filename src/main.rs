@@ -78,24 +78,7 @@ fn main() -> Result<(), LinemanApplicationError> {
         }
     }
 
-    let category_and_file_paths = [
-        (("Cleaned Files:"), cleaned_file_paths),
-        (("Skipped Files:"), skipped_file_paths),
-    ];
-
-    for (category, file_paths) in category_and_file_paths {
-        println!("{}", category);
-
-        for file_path in file_paths {
-            println!("{}{}", " ".repeat(4), file_path.display());
-        }
-    }
-
-    println!("Walkdir Errors:");
-
-    for walk_dir_error in walk_dir_errors {
-        println!("{}{}", " ".repeat(4), walk_dir_error);
-    }
+    print_report(&cleaned_file_paths, &skipped_file_paths, &walk_dir_errors);
 
     Ok(())
 }
@@ -134,6 +117,30 @@ fn clean_lines(lines: &[&str], normalize_eof_newlines: bool) -> Vec<String> {
 
     cleaned_lines.reverse();
     cleaned_lines
+}
+
+fn print_report(
+    cleaned_file_paths: &[PathBuf],
+    skipped_file_paths: &[PathBuf],
+    walk_dir_errors: &[Error],
+) {
+    println!("Cleaned Files:");
+
+    for cleaned_file_path in cleaned_file_paths {
+        println!("{}{}", " ".repeat(4), cleaned_file_path.display());
+    }
+
+    println!("Skipped Files:");
+
+    for skipped_file_path in skipped_file_paths {
+        println!("{}{}", " ".repeat(4), skipped_file_path.display());
+    }
+
+    println!("Walkdir Errors:");
+
+    for walk_dir_error in walk_dir_errors {
+        println!("{}{}", " ".repeat(4), walk_dir_error);
+    }
 }
 
 #[test]
