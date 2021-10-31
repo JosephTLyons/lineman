@@ -124,22 +124,30 @@ fn print_report(
     skipped_file_paths: &[PathBuf],
     walk_dir_errors: &[Error],
 ) {
-    println!("Cleaned Files:");
+    let indent = " ".repeat(4);
 
-    for cleaned_file_path in cleaned_file_paths {
-        println!("{}{}", " ".repeat(4), cleaned_file_path.display());
+    if !cleaned_file_paths.is_empty() {
+        println!("Cleaned Files:");
+
+        for cleaned_file_path in cleaned_file_paths {
+            println!("{}{}", indent, cleaned_file_path.display());
+        }
     }
 
-    println!("Skipped Files:");
+    if !skipped_file_paths.is_empty() {
+        println!("Skipped Files:");
 
-    for skipped_file_path in skipped_file_paths {
-        println!("{}{}", " ".repeat(4), skipped_file_path.display());
+        for skipped_file_path in skipped_file_paths {
+            println!("{}{}", indent, skipped_file_path.display());
+        }
     }
 
-    println!("Walkdir Errors:");
+    if !walk_dir_errors.is_empty() {
+        println!("Walkdir Errors:");
 
-    for walk_dir_error in walk_dir_errors {
-        println!("{}{}", " ".repeat(4), walk_dir_error);
+        for walk_dir_error in walk_dir_errors {
+            println!("{}{}", indent, walk_dir_error);
+        }
     }
 }
 
