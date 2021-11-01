@@ -11,7 +11,7 @@ can be reverted.
 
 Lineman currently performs two actions:
 
-1. Strips trailing whitespace in every line in an file
+1. Strips trailing whitespace in every line in a file
 2. Normalizes the newline count at the end of a file to one
 
 The following command would run lineman on every rust and python file within the
