@@ -260,7 +260,7 @@ fn remove_excessive_newlines_from_end_of_file() {
 }
 
 #[test]
-fn keep_excessive_newlines_from_end_of_file() {
+fn do_not_remove_excessive_newlines_from_end_of_file() {
     let input_lines = [
         "def main():\n",
         "    print(\"Hello World\")\n",
