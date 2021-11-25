@@ -90,10 +90,11 @@ fn main() -> Result<(), LinemanApplicationError> {
 fn clean_file(path: &Path, normalize_eof_newlines: bool) -> Result<bool, LinemanFileError> {
     let file_string = fs::read_to_string(path).map_err(|_| LinemanFileError::FileNotOpened)?;
     let lines: Vec<&str> = file_string.split_inclusive('\n').collect();
-    let mut file = File::create(path).map_err(|_| LinemanFileError::FileNotCleaned)?;
     let (clean_lines, file_was_cleaned) = clean_lines(&lines, normalize_eof_newlines);
 
     if file_was_cleaned {
+        let mut file = File::create(path).map_err(|_| LinemanFileError::FileNotCleaned)?;
+
         for clean_line in clean_lines {
             // TODO: This needs more thought, as a failure here means the file is probably only partially written to
             // Better hope your files are version controlled
