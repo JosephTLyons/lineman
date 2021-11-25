@@ -126,6 +126,7 @@ fn clean_lines(lines: &[&str], normalize_eof_newlines: bool) -> (Vec<String>, bo
 
     cleaned_lines.reverse();
 
+    // This is probably slow, maybe a better method can be implemented later
     let lines_were_cleaned = lines != cleaned_lines;
 
     (cleaned_lines, lines_were_cleaned)
