@@ -14,7 +14,7 @@ struct LinemanArgs {
 
     /// A list of file extensions that dictates which files are processed
     #[structopt(short, long)]
-    extensions: Vec<String>,
+    extensions: Option<Vec<String>>,
 
     /// Disables EOF newline normalization
     #[structopt(short, long)]
@@ -57,12 +57,13 @@ fn main() -> Result<(), LinemanApplicationError> {
                 }
 
                 if let Some(current_file_extension) = path.extension() {
-                    let file_is_in_extension_vector = args
-                        .extensions
-                        .iter()
-                        .any(|extension| OsStr::new(extension) == current_file_extension);
+                    let should_clean_file = args.extensions.as_ref().map_or(true, |extensions| {
+                        extensions
+                            .iter()
+                            .any(|extension| OsStr::new(extension) == current_file_extension)
+                    });
 
-                    if file_is_in_extension_vector {
+                    if should_clean_file {
                         match clean_file(path, normalize_eof_newlines) {
                             Ok(file_was_cleaned) => {
                                 if file_was_cleaned {
