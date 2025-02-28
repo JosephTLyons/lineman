@@ -152,7 +152,8 @@ fn print_report(
         println!("Skipped Files:");
 
         for skipped_file_path in skipped_file_paths {
-            println!("{}{}", indent, skipped_file_path.display());
+            let skipped_file_path = skipped_file_path.display();
+            println!("{indent}{skipped_file_path}");
         }
     }
 
