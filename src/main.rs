@@ -57,7 +57,7 @@ fn main() -> Result<(), LinemanApplicationError> {
                 }
 
                 if let Some(current_file_extension) = path.extension() {
-                    let should_clean_file = args.extensions.as_ref().map_or(true, |extensions| {
+                    let should_clean_file = args.extensions.as_ref().is_none_or(|extensions| {
                         extensions
                             .iter()
                             .any(|extension| OsStr::new(extension) == current_file_extension)
@@ -113,13 +113,12 @@ fn clean_lines(lines: &[&str], normalize_eof_newlines: bool) -> (Vec<String>, bo
         .map(|line| {
             let line_has_newline = line.ends_with('\n');
             let trimmed_line = line.trim_end();
-            let cleaned_line = if normalize_eof_newlines || line_has_newline {
+
+            if normalize_eof_newlines || line_has_newline {
                 format!("{}\n", trimmed_line)
             } else {
                 trimmed_line.to_string()
-            };
-
-            cleaned_line
+            }
         })
         .rev()
         .skip_while(|line| normalize_eof_newlines && line.trim_end().is_empty())
@@ -187,7 +186,7 @@ fn clean_lines_with_trailing_spaces() {
     let (output_lines, lines_have_changes) = clean_lines(&input_lines, true);
 
     assert_eq!(expected_output_lines.to_vec(), output_lines);
-    assert_eq!(lines_have_changes, true);
+    assert!(lines_have_changes);
 }
 
 #[test]
@@ -211,7 +210,7 @@ fn clean_lines_with_trailing_tabs() {
     let (output_lines, lines_have_changes) = clean_lines(&input_lines, true);
 
     assert_eq!(expected_output_lines.to_vec(), output_lines);
-    assert_eq!(lines_have_changes, true);
+    assert!(lines_have_changes);
 }
 
 #[test]
@@ -235,7 +234,7 @@ fn add_newline_to_end_of_file() {
     let (output_lines, lines_have_changes) = clean_lines(&input_lines, true);
 
     assert_eq!(expected_output_lines.to_vec(), output_lines);
-    assert_eq!(lines_have_changes, true);
+    assert!(lines_have_changes);
 }
 
 #[test]
@@ -259,7 +258,7 @@ fn do_not_add_newline_to_end_of_file() {
     let (output_lines, lines_have_changes) = clean_lines(&input_lines, false);
 
     assert_eq!(expected_output_lines.to_vec(), output_lines);
-    assert_eq!(lines_have_changes, false);
+    assert!(!lines_have_changes);
 }
 
 #[test]
@@ -286,7 +285,7 @@ fn remove_excessive_newlines_from_end_of_file() {
     let (output_lines, lines_have_changes) = clean_lines(&input_lines, true);
 
     assert_eq!(expected_output_lines.to_vec(), output_lines);
-    assert_eq!(lines_have_changes, true);
+    assert!(lines_have_changes);
 }
 
 #[test]
@@ -316,5 +315,5 @@ fn do_not_remove_excessive_newlines_from_end_of_file() {
     let (output_lines, lines_have_changes) = clean_lines(&input_lines, false);
 
     assert_eq!(expected_output_lines.to_vec(), output_lines);
-    assert_eq!(lines_have_changes, false);
+    assert!(!lines_have_changes);
 }
